@@ -56,6 +56,7 @@ export function CartProvider({ children }: { children: ReactNode }) {
 
   const api = useMemo<CartApi>(() => {
     const add: CartApi["add"] = (item, qty = 1) => {
+      console.log("[cart] add called", item.productId, qty);
       setItems((prev) => {
         const existing = prev.find((p) => p.productId === item.productId);
         if (existing) {
