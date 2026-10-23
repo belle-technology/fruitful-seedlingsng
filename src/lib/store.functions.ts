@@ -221,9 +221,10 @@ export const adminSetOrderStatus = createServerFn({ method: "POST" })
     const allowed = ["pending_payment", "payment_confirmed", "delivered", "cancelled"];
     if (!allowed.includes(data.status)) return { ok: false as const, error: "Invalid status." };
     const admin = await getAdminClient();
-    const patch: Record<string, unknown> = { status: data.status };
-    if (data.status === "payment_confirmed") patch.payment_confirmed_at = new Date().toISOString();
-    if (data.status !== "payment_confirmed") patch.payment_confirmed_at = null;
+    const patch: { status: string; payment_confirmed_at: string | null } = {
+      status: data.status,
+      payment_confirmed_at: data.status === "payment_confirmed" ? new Date().toISOString() : null,
+    };
     const { error } = await admin.from("orders").update(patch).eq("id", data.orderId);
     if (error) return { ok: false as const, error: error.message };
     return { ok: true as const, error: null };
