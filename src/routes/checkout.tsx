@@ -4,7 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { settingsQueryOptions } from "@/lib/queries";
 import { placeOrder, type StoreSettingsDto } from "@/lib/store.functions";
-import { useCart } from "@/lib/cart";
+import { CartProvider, useCart } from "@/lib/cart";
 import { NIGERIAN_STATES, formatNaira } from "@/lib/nigeria";
 
 export const Route = createFileRoute("/checkout")({
