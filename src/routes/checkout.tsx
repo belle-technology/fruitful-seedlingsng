@@ -30,9 +30,15 @@ export const Route = createFileRoute("/checkout")({
   component: CheckoutPage,
 });
 
-type PlacedOrder = { order_code: string; total: number };
-
 function CheckoutPage() {
+  return (
+    <CartProvider>
+      <CheckoutInner />
+    </CartProvider>
+  );
+}
+
+function CheckoutInner() {
   const { data: settingsData } = useSuspenseQuery(settingsQueryOptions);
   const settings = settingsData.settings as StoreSettingsDto | null;
   const { items, total, clear } = useCart();
