@@ -38,6 +38,8 @@ function CheckoutPage() {
   );
 }
 
+type PlacedOrder = { order_code: string; total: number };
+
 function CheckoutInner() {
   const { data: settingsData } = useSuspenseQuery(settingsQueryOptions);
   const settings = settingsData.settings as StoreSettingsDto | null;
