@@ -1,19 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useSuspenseQuery } from "@tanstack/react-query";
 import { useMemo, useState } from "react";
-import { useServerFn } from "@tanstack/react-start";
-import { productsQueryOptions } from "@/lib/queries";
-import { getProducts, type ProductDto } from "@/lib/store.functions";
+import { productsQueryOptions, settingsQueryOptions } from "@/lib/queries";
+import type { ProductDto } from "@/lib/store.functions";
 import { CartProvider, useCart } from "@/lib/cart";
+import { CartDrawerOpenProvider, useCartDrawerOpen } from "@/lib/cart-drawer-open";
 import { formatNaira } from "@/lib/nigeria";
 import { CartDrawer } from "@/components/CartDrawer";
-
-const refetchProducts = useServerFnSafe(getProducts);
-
-// Small helper so the admin page can trigger a server fn from a button.
-function useServerFnSafe<T extends (args?: unknown) => unknown>(fn: T) {
-  return fn;
-}
 
 const CATEGORIES = [
   "All",
@@ -33,7 +26,10 @@ export const Route = createFileRoute("/")({
         content:
           "Buy grafted grape vines, fruit trees, citrus and palm seedlings online. Pay by bank transfer, nationwide delivery to all 36 states + FCT.",
       },
-      { property: "og:title", content: "Fruitful Seedlings — Fruit Tree Seedlings Delivered Across Nigeria" },
+      {
+        property: "og:title",
+        content: "Fruitful Seedlings — Fruit Tree Seedlings Delivered Across Nigeria",
+      },
       {
         property: "og:description",
         content:
@@ -46,20 +42,17 @@ export const Route = createFileRoute("/")({
   loader: ({ context }) =>
     Promise.all([
       context.queryClient.ensureQueryData(productsQueryOptions),
-      context.queryClient.ensureQueryData(settingsQueryOptionsRef),
+      context.queryClient.ensureQueryData(settingsQueryOptions),
     ]),
   component: Storefront,
 });
 
-const settingsQueryOptionsRef = {
-  queryKey: ["store-settings"],
-  queryFn: () => import("@/lib/queries").then((m) => m.settingsQueryOptions.queryFn()),
-};
-
 function Storefront() {
   return (
     <CartProvider>
-      <StorefrontInner />
+      <CartDrawerOpenProvider>
+        <StorefrontInner />
+      </CartDrawerOpenProvider>
     </CartProvider>
   );
 }
@@ -69,6 +62,7 @@ function StorefrontInner() {
   const { data } = useSuspenseQuery(productsQueryOptions);
   const products = data.products ?? [];
   const { count } = useCart();
+  const { setOpen } = useCartDrawerOpen();
 
   const filtered = useMemo(
     () =>
@@ -80,7 +74,24 @@ function StorefrontInner() {
 
   return (
     <div className="min-h-screen bg-background">
-      <StoreHeader cartCount={count} />
+      <header className="sticky top-0 z-40 border-b border-border bg-background/90 backdrop-blur">
+        <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
+          <a href="/" className="font-display text-xl font-bold text-primary">
+            🍇 Fruitful Seedlings
+          </a>
+          <button
+            onClick={() => setOpen(true)}
+            className="relative inline-flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90"
+          >
+            🛒 Cart
+            {count > 0 && (
+              <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-accent px-1 text-xs font-bold text-accent-foreground">
+                {count}
+              </span>
+            )}
+          </button>
+        </div>
+      </header>
 
       {/* Hero */}
       <section className="mx-auto grid max-w-6xl items-center gap-8 px-4 pb-10 pt-8 md:grid-cols-2 md:pt-14">
@@ -201,53 +212,16 @@ function StorefrontInner() {
       </footer>
 
       <CartDrawer />
-      {count > 0 && <FloatingCartButton />}
-    </div>
-  );
-}
-
-function StoreHeader({ cartCount }: { cartCount: number }) {
-  return (
-    <header className="sticky top-0 z-40 border-b border-border bg-background/90 backdrop-blur">
-      <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
-        <a href="/" className="font-display text-xl font-bold text-primary">
-          🍇 Fruitful Seedlings
-        </a>
-        <CartTrigger count={cartCount} />
-      </div>
-    </header>
-  );
-}
-
-function CartTrigger({ count }: { count: number }) {
-  const { setOpen } = useCartDrawerOpen();
-  return (
-    <button
-      onClick={() => setOpen(true)}
-      className="relative inline-flex items-center gap-2 rounded-full bg-primary px-4 py-2 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90"
-    >
-      🛒 Cart
       {count > 0 && (
-        <span className="absolute -right-1 -top-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-accent px-1 text-xs font-bold text-accent-foreground">
-          {count}
-        </span>
+        <button
+          onClick={() => setOpen(true)}
+          className="fixed bottom-4 right-4 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-2xl text-primary-foreground shadow-lg transition hover:bg-primary/90 md:hidden"
+          aria-label="Open cart"
+        >
+          🛒
+        </button>
       )}
-    </button>
-  );
-}
-
-// Minimal context so the floating button can open the same drawer.
-import { CartDrawerOpenProvider, useCartDrawerOpen } from "@/lib/cart-drawer-open";
-function FloatingCartButton() {
-  const { setOpen } = useCartDrawerOpen();
-  return (
-    <button
-      onClick={() => setOpen(true)}
-      className="fixed bottom-4 right-4 z-40 flex h-14 w-14 items-center justify-center rounded-full bg-primary text-2xl text-primary-foreground shadow-lg transition hover:bg-primary/90 md:hidden"
-      aria-label="Open cart"
-    >
-      🛒
-    </button>
+    </div>
   );
 }
 

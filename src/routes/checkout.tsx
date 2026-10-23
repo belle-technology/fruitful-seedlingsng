@@ -4,7 +4,7 @@ import { useServerFn } from "@tanstack/react-start";
 import { useState } from "react";
 import { settingsQueryOptions } from "@/lib/queries";
 import { placeOrder, type StoreSettingsDto } from "@/lib/store.functions";
-import { useCart } from "@/lib/cart";
+import { CartProvider, useCart } from "@/lib/cart";
 import { NIGERIAN_STATES, formatNaira } from "@/lib/nigeria";
 
 export const Route = createFileRoute("/checkout")({
@@ -30,9 +30,17 @@ export const Route = createFileRoute("/checkout")({
   component: CheckoutPage,
 });
 
+function CheckoutPage() {
+  return (
+    <CartProvider>
+      <CheckoutInner />
+    </CartProvider>
+  );
+}
+
 type PlacedOrder = { order_code: string; total: number };
 
-function CheckoutPage() {
+function CheckoutInner() {
   const { data: settingsData } = useSuspenseQuery(settingsQueryOptions);
   const settings = settingsData.settings as StoreSettingsDto | null;
   const { items, total, clear } = useCart();
