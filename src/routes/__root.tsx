@@ -105,6 +105,32 @@ function RootShell({ children }: { children: ReactNode }) {
 function RootComponent() {
   const { queryClient } = Route.useRouteContext();
 
+  // A dropped connection while loading app files leaves a blank screen;
+  // reload once automatically so the visitor gets the shop back.
+  useEffect(() => {
+    const isLoadFailure = (msg: string) =>
+      /Load failed|Failed to fetch dynamically imported module|Importing a module script failed|error loading dynamically imported module/i.test(
+        msg,
+      );
+    const recover = (msg: string) => {
+      if (!isLoadFailure(msg)) return;
+      const key = "fs-load-retry";
+      const last = Number(sessionStorage.getItem(key) ?? 0);
+      if (Date.now() - last < 30_000) return;
+      sessionStorage.setItem(key, String(Date.now()));
+      window.location.reload();
+    };
+    const onRejection = (e: PromiseRejectionEvent) =>
+      recover(String((e.reason as Error)?.message ?? e.reason));
+    const onError = (e: ErrorEvent) => recover(String(e.message));
+    window.addEventListener("unhandledrejection", onRejection);
+    window.addEventListener("error", onError);
+    return () => {
+      window.removeEventListener("unhandledrejection", onRejection);
+      window.removeEventListener("error", onError);
+    };
+  }, []);
+
   return (
     <QueryClientProvider client={queryClient}>
       {/* Required: nested routes render here. Removing <Outlet /> breaks all child routes. */}
