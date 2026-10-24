@@ -7,6 +7,7 @@ import { CartProvider, useCart } from "@/lib/cart";
 import { CartDrawerOpenProvider, useCartDrawerOpen } from "@/lib/cart-drawer-open";
 import { formatNaira } from "@/lib/nigeria";
 import { CartDrawer } from "@/components/CartDrawer";
+import logo from "@/assets/logo-badge.png";
 
 const CATEGORIES = [
   "All",
@@ -76,8 +77,8 @@ function StorefrontInner() {
     <div className="min-h-screen bg-background">
       <header className="sticky top-0 z-40 border-b border-border bg-background/90 backdrop-blur">
         <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-3">
-          <a href="/" className="font-display text-xl font-bold text-primary">
-            🍇 Fruitful Seedlings
+          <a href="/" aria-label="Fruitful Seedlings home">
+            <img src={logo} alt="Fruitful Seedlings" width={1536} height={768} className="h-12 w-auto" />
           </a>
           <button
             onClick={() => setOpen(true)}
