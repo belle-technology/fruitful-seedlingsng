@@ -66,6 +66,7 @@ export type Database = {
           fruiting: string
           id: string
           image: string
+          in_stock: boolean
           name: string
           price: number
           sort: number
@@ -76,6 +77,7 @@ export type Database = {
           fruiting: string
           id?: string
           image: string
+          in_stock?: boolean
           name: string
           price: number
           sort?: number
@@ -86,6 +88,7 @@ export type Database = {
           fruiting?: string
           id?: string
           image?: string
+          in_stock?: boolean
           name?: string
           price?: number
           sort?: number
@@ -127,7 +130,17 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      get_order_tracking: {
+        Args: { _code: string }
+        Returns: {
+          created_at: string
+          items: Json
+          order_code: string
+          payment_confirmed_at: string
+          status: string
+          total: number
+        }[]
+      }
     }
     Enums: {
       [_ in never]: never

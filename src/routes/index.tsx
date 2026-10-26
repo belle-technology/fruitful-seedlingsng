@@ -206,9 +206,14 @@ function StorefrontInner() {
             Fruiting periods are approximate and can vary depending on variety, plant age,
             climate, soil and care.
           </p>
-          <Link to="/admin" className="mt-2 text-xs text-muted-foreground underline">
-            Store admin
-          </Link>
+          <div className="mt-2 flex flex-wrap justify-center gap-4 text-xs text-muted-foreground">
+            <Link to="/track" search={{ code: undefined }} className="underline">
+              Track your order
+            </Link>
+            <Link to="/admin" className="underline">
+              Store admin
+            </Link>
+          </div>
         </div>
       </footer>
 
@@ -230,15 +235,23 @@ function ProductCard({ product }: { product: ProductDto }) {
   const { add } = useCart();
   return (
     <div className="group overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition hover:shadow-md">
-      <div className="aspect-square overflow-hidden bg-secondary">
+      <div className="relative aspect-square overflow-hidden bg-secondary">
         <img
           src={product.image}
           alt={product.name}
           loading="lazy"
           width={1024}
           height={1024}
-          className="h-full w-full object-cover transition duration-300 group-hover:scale-105"
+          className={
+            "h-full w-full object-cover transition duration-300 group-hover:scale-105" +
+            (product.in_stock ? "" : " opacity-50")
+          }
         />
+        {!product.in_stock && (
+          <span className="absolute left-2 top-2 rounded-full bg-card/95 px-3 py-1 text-xs font-bold text-foreground shadow-sm">
+            Out of stock
+          </span>
+        )}
       </div>
       <div className="p-3">
         <p className="truncate font-display text-base font-semibold text-foreground">
@@ -247,19 +260,25 @@ function ProductCard({ product }: { product: ProductDto }) {
         <p className="mt-0.5 text-xs text-muted-foreground">Fruits in {product.fruiting}</p>
         <div className="mt-2 flex items-center justify-between gap-2">
           <span className="font-semibold text-primary">{formatNaira(product.price)}</span>
-          <button
-            onClick={() =>
-              add({
-                productId: product.id,
-                name: product.name,
-                price: product.price,
-                image: product.image,
-              })
-            }
-            className="rounded-full bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground transition hover:bg-primary/90"
-          >
-            + Add
-          </button>
+          {product.in_stock ? (
+            <button
+              onClick={() =>
+                add({
+                  productId: product.id,
+                  name: product.name,
+                  price: product.price,
+                  image: product.image,
+                })
+              }
+              className="rounded-full bg-primary px-3 py-1.5 text-xs font-semibold text-primary-foreground transition hover:bg-primary/90"
+            >
+              + Add
+            </button>
+          ) : (
+            <span className="rounded-full border border-input bg-muted px-3 py-1.5 text-xs font-semibold text-muted-foreground">
+              Out of stock
+            </span>
+          )}
         </div>
       </div>
     </div>
