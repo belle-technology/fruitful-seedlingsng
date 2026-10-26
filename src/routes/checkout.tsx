@@ -120,12 +120,21 @@ function CheckoutInner() {
           We confirm every payment manually, then dispatch your seedlings. Keep your order code
           for reference.
         </p>
-        <Link
-          to="/"
-          className="mt-6 inline-flex items-center justify-center rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90"
-        >
-          Continue shopping
-        </Link>
+        <div className="mt-6 flex flex-wrap justify-center gap-3">
+          <Link
+            to="/track"
+            search={{ code: placed.order_code }}
+            className="inline-flex items-center justify-center rounded-full bg-primary px-6 py-3 text-sm font-semibold text-primary-foreground transition hover:bg-primary/90"
+          >
+            Track your order
+          </Link>
+          <Link
+            to="/"
+            className="inline-flex items-center justify-center rounded-full border border-input bg-card px-6 py-3 text-sm font-semibold text-foreground transition hover:bg-accent/40"
+          >
+            Continue shopping
+          </Link>
+        </div>
       </div>
     );
   }

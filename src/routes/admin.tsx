@@ -4,9 +4,11 @@ import { useState } from "react";
 import {
   adminGetData,
   adminSetOrderStatus,
+  adminSetProductStock,
   adminUpdateSettings,
   type AdminData,
   type AdminOrder,
+  type AdminProduct,
   type StoreSettingsDto,
 } from "@/lib/store.functions";
 import { formatNaira } from "@/lib/nigeria";
@@ -37,6 +39,7 @@ function AdminPage() {
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showStock, setShowStock] = useState(false);
   const getData = useServerFn(adminGetData);
 
   async function handleLogin(e: React.FormEvent) {
@@ -103,12 +106,20 @@ function AdminPage() {
     <div className="mx-auto max-w-4xl px-4 py-8">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <h1 className="font-display text-2xl font-bold text-foreground">Orders</h1>
-        <button
-          onClick={() => setShowSettings((s) => !s)}
-          className="rounded-full border border-input bg-card px-4 py-2 text-sm font-semibold text-foreground transition hover:bg-secondary"
-        >
-          {showSettings ? "Hide settings" : "Bank & business settings"}
-        </button>
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={() => setShowStock((s) => !s)}
+            className="rounded-full border border-input bg-card px-4 py-2 text-sm font-semibold text-foreground transition hover:bg-secondary"
+          >
+            {showStock ? "Hide stock" : "Seedling stock"}
+          </button>
+          <button
+            onClick={() => setShowSettings((s) => !s)}
+            className="rounded-full border border-input bg-card px-4 py-2 text-sm font-semibold text-foreground transition hover:bg-secondary"
+          >
+            {showSettings ? "Hide settings" : "Bank & business settings"}
+          </button>
+        </div>
       </div>
 
       {showSettings && data.settings && (
@@ -125,6 +136,14 @@ function AdminPage() {
         <StatBox label="Delivered" value={String(delivered.length)} />
         <StatBox label="Confirmed revenue" value={formatNaira(revenue)} />
       </div>
+
+      {showStock && data.products.length > 0 && (
+        <StockPanel
+          passcode={passcode}
+          products={data.products}
+          onChanged={() => refresh(passcode)}
+        />
+      )}
 
       <div className="mt-6 space-y-4">
         {orders.length === 0 && (
@@ -319,6 +338,72 @@ function Field({
         onChange={(e) => onChange(e.target.value)}
         className="mt-1 w-full rounded-xl border border-input bg-background px-4 py-2.5 text-sm outline-none focus:border-ring focus:ring-2 focus:ring-ring/30"
       />
+    </div>
+  );
+}
+
+function StockPanel({
+  passcode,
+  products,
+  onChanged,
+}: {
+  passcode: string;
+  products: AdminProduct[];
+  onChanged: () => void;
+}) {
+  const setStock = useServerFn(adminSetProductStock);
+  const [busyId, setBusyId] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(null);
+
+  async function toggle(p: AdminProduct) {
+    setBusyId(p.id);
+    setError(null);
+    try {
+      const res = await setStock({
+        data: { passcode, productId: p.id, inStock: !p.in_stock },
+      });
+      if (!res.ok) setError(res.error);
+      else onChanged();
+    } finally {
+      setBusyId(null);
+    }
+  }
+
+  return (
+    <div className="mt-4 rounded-2xl border border-border bg-card p-5 shadow-sm">
+      <p className="font-display text-lg font-semibold text-foreground">Seedling stock</p>
+      <p className="mt-1 text-xs text-muted-foreground">
+        Mark a seedling as out of stock and customers will see “Out of stock” instead of the Add
+        button. It stays visible in the shop.
+      </p>
+      {error && <p className="mt-2 text-sm text-destructive">{error}</p>}
+      <div className="mt-3 grid gap-2 md:grid-cols-2">
+        {products.map((p) => (
+          <div
+            key={p.id}
+            className="flex items-center justify-between gap-3 rounded-xl border border-border bg-background px-3 py-2"
+          >
+            <div className="min-w-0">
+              <p className="truncate text-sm font-semibold text-foreground">{p.name}</p>
+              <p className="text-xs text-muted-foreground">
+                {p.category} · {formatNaira(p.price)}
+              </p>
+            </div>
+            <button
+              disabled={busyId === p.id}
+              onClick={() => toggle(p)}
+              className={
+                "shrink-0 rounded-full px-3 py-1.5 text-xs font-semibold transition disabled:opacity-60 " +
+                (p.in_stock
+                  ? "bg-secondary text-secondary-foreground hover:bg-secondary/80"
+                  : "border border-destructive/40 text-destructive hover:bg-destructive/10")
+              }
+            >
+              {p.in_stock ? "In stock ✓" : "Out of stock"}
+            </button>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
