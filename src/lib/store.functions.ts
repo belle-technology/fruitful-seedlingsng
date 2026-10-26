@@ -9,6 +9,7 @@ export type ProductDto = {
   price: number;
   fruiting: string;
   image: string;
+  in_stock: boolean;
 };
 
 export type StoreSettingsDto = {
@@ -34,8 +35,20 @@ export type AdminOrder = {
   created_at: string;
 };
 
+export type AdminProduct = {
+  id: string;
+  name: string;
+  category: string;
+  price: number;
+  fruiting: string;
+  image: string;
+  sort: number;
+  in_stock: boolean;
+};
+
 export type AdminData = {
   orders: AdminOrder[];
+  products: AdminProduct[];
   settings: StoreSettingsDto | null;
 };
 
@@ -70,7 +83,7 @@ async function getAdminClient() {
 export const getProducts = createServerFn({ method: "GET" }).handler(async () => {
   const { data, error } = await getPublicClient()
     .from("products")
-    .select("id, name, category, price, fruiting, image")
+    .select("id, name, category, price, fruiting, image, in_stock")
     .eq("active", true)
     .order("sort");
   if (error) return { products: [] as ProductDto[], error: error.message };
@@ -136,7 +149,8 @@ export const placeOrder = createServerFn({ method: "POST" })
         "id",
         items.map((i) => i.productId),
       )
-      .eq("active", true);
+      .eq("active", true)
+      .eq("in_stock", true);
     if (pErr || !rows || rows.length === 0) {
       return {
         ok: false as const,
@@ -195,8 +209,13 @@ export const adminGetData = createServerFn({ method: "POST" })
       return { ok: false as const, error: "Wrong admin code." };
     }
     const admin = await getAdminClient();
-    const [ordersRes, settingsRes] = await Promise.all([
+    const [ordersRes, productsRes, settingsRes] = await Promise.all([
       admin.from("orders").select("*").order("created_at", { ascending: false }).limit(200),
+      admin
+        .from("products")
+        .select("id, name, category, price, fruiting, image, sort, in_stock")
+        .eq("active", true)
+        .order("sort"),
       admin
         .from("store_settings")
         .select("business_name, bank_name, account_number, account_name, whatsapp")
@@ -204,11 +223,13 @@ export const adminGetData = createServerFn({ method: "POST" })
         .maybeSingle(),
     ]);
     if (ordersRes.error) return { ok: false as const, error: ordersRes.error.message };
+    if (productsRes.error) return { ok: false as const, error: productsRes.error.message };
     return {
       ok: true as const,
       error: null,
       data: {
         orders: (ordersRes.data ?? []) as AdminOrder[],
+        products: (productsRes.data ?? []) as AdminProduct[],
         settings: (settingsRes.data ?? null) as StoreSettingsDto | null,
       },
     };
@@ -256,6 +277,48 @@ export const adminUpdateSettings = createServerFn({ method: "POST" })
     };
     const admin = await getAdminClient();
     const { error } = await admin.from("store_settings").update(clean).eq("id", "default");
+    if (error) return { ok: false as const, error: error.message };
+    return { ok: true as const, error: null };
+  });
+
+export type TrackedOrder = {
+  order_code: string;
+  status: string;
+  items: { productId: string; name: string; price: number; qty: number; image: string }[];
+  total: number;
+  created_at: string;
+  payment_confirmed_at: string | null;
+};
+
+export const trackOrder = createServerFn({ method: "GET" })
+  .inputValidator((input: { code: string }) => input)
+  .handler(async ({ data }) => {
+    const code = (data.code || "").trim().toUpperCase();
+    if (!code) return { ok: false as const, error: "Please enter your order code." };
+    const { data: row, error } = await getPublicClient()
+      .rpc("get_order_tracking", { _code: code })
+      .maybeSingle();
+    if (error) {
+      return { ok: false as const, error: "We couldn't look that up. Please try again." };
+    }
+    if (!row) {
+      return {
+        ok: false as const,
+        error: "No order found with that code. Check the code and try again.",
+      };
+    }
+    return { ok: true as const, order: row as TrackedOrder, error: null };
+  });
+
+export const adminSetProductStock = createServerFn({ method: "POST" })
+  .inputValidator((input: { passcode: string; productId: string; inStock: boolean }) => input)
+  .handler(async ({ data }) => {
+    if (!passcodeOk(data.passcode)) return { ok: false as const, error: "Wrong admin code." };
+    const admin = await getAdminClient();
+    const { error } = await admin
+      .from("products")
+      .update({ in_stock: data.inStock })
+      .eq("id", data.productId);
     if (error) return { ok: false as const, error: error.message };
     return { ok: true as const, error: null };
   });
