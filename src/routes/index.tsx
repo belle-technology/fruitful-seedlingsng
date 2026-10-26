@@ -207,7 +207,7 @@ function StorefrontInner() {
             climate, soil and care.
           </p>
           <div className="mt-2 flex flex-wrap justify-center gap-4 text-xs text-muted-foreground">
-            <Link to="/track" search={{}} className="underline">
+            <Link to="/track" search={{ code: undefined }} className="underline">
               Track your order
             </Link>
             <Link to="/admin" className="underline">
