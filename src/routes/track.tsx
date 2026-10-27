@@ -32,13 +32,22 @@ export const Route = createFileRoute("/track")({
 const STEPS = [
   { label: "Order placed", hint: "We received your order." },
   { label: "Payment confirmed", hint: "Your transfer has been confirmed." },
-  { label: "Delivered", hint: "Your seedlings are with you." },
+  { label: "Preparing seedlings", hint: "We're getting your plants ready." },
+  { label: "Dispatched", hint: "Your order has left our nursery." },
+  { label: "Out for delivery", hint: "It's on the way to your address." },
+  { label: "Delivered", hint: "Your seedlings are with you — happy planting!" },
 ];
 
 function stepIndexFor(order: TrackedOrder): number {
-  if (order.status === "payment_confirmed") return 1;
-  if (order.status === "delivered") return 2;
-  return 0;
+  const map: Record<string, number> = {
+    pending_payment: 0,
+    payment_confirmed: 1,
+    preparing_seedlings: 2,
+    dispatched: 3,
+    out_for_delivery: 4,
+    delivered: 5,
+  };
+  return map[order.status] ?? 0;
 }
 
 function TrackPage() {
@@ -174,7 +183,7 @@ function TrackPage() {
                           }
                         >
                           {step.label}
-                          {isCurrent && i < 2 && " — in progress"}
+                          {isCurrent && i < 5 && " — in progress"}
                         </p>
                         {when && <p className="text-xs text-muted-foreground">{when}</p>}
                         {!done && <p className="text-xs text-muted-foreground">{step.hint}</p>}
@@ -213,6 +222,9 @@ function TrackPage() {
 const STATUS_LABELS: Record<string, string> = {
   pending_payment: "Awaiting payment",
   payment_confirmed: "Payment confirmed",
+  preparing_seedlings: "Preparing seedlings",
+  dispatched: "Dispatched",
+  out_for_delivery: "Out for delivery",
   delivered: "Delivered",
   cancelled: "Cancelled",
 };
