@@ -29,6 +29,9 @@ export const Route = createFileRoute("/admin")({
 const STATUS_LABELS: Record<string, string> = {
   pending_payment: "Awaiting payment",
   payment_confirmed: "Payment confirmed",
+  preparing_seedlings: "Preparing seedlings",
+  dispatched: "Dispatched",
+  out_for_delivery: "Out for delivery",
   delivered: "Delivered",
   cancelled: "Cancelled",
 };
@@ -193,11 +196,11 @@ function OrderCard({
   const badge =
     order.status === "pending_payment"
       ? "bg-accent/40 text-accent-foreground"
-      : order.status === "payment_confirmed"
-        ? "bg-secondary text-secondary-foreground"
-        : order.status === "delivered"
-          ? "bg-primary text-primary-foreground"
-          : "bg-muted text-muted-foreground";
+      : order.status === "delivered"
+        ? "bg-primary text-primary-foreground"
+        : order.status === "cancelled"
+          ? "bg-muted text-muted-foreground"
+          : "bg-secondary text-secondary-foreground";
 
   return (
     <div className="rounded-2xl border border-border bg-card p-4 shadow-sm">
@@ -238,10 +241,37 @@ function OrderCard({
         {order.status === "payment_confirmed" && (
           <button
             disabled={busy}
+            onClick={() => changeStatus("preparing_seedlings")}
+            className="rounded-full bg-secondary px-4 py-2 text-xs font-semibold text-secondary-foreground transition hover:bg-secondary/80 disabled:opacity-60"
+          >
+            🌱 Start preparing seedlings
+          </button>
+        )}
+        {order.status === "preparing_seedlings" && (
+          <button
+            disabled={busy}
+            onClick={() => changeStatus("dispatched")}
+            className="rounded-full bg-secondary px-4 py-2 text-xs font-semibold text-secondary-foreground transition hover:bg-secondary/80 disabled:opacity-60"
+          >
+            📦 Mark as dispatched
+          </button>
+        )}
+        {order.status === "dispatched" && (
+          <button
+            disabled={busy}
+            onClick={() => changeStatus("out_for_delivery")}
+            className="rounded-full bg-secondary px-4 py-2 text-xs font-semibold text-secondary-foreground transition hover:bg-secondary/80 disabled:opacity-60"
+          >
+            🚚 Out for delivery
+          </button>
+        )}
+        {order.status === "out_for_delivery" && (
+          <button
+            disabled={busy}
             onClick={() => changeStatus("delivered")}
             className="rounded-full bg-secondary px-4 py-2 text-xs font-semibold text-secondary-foreground transition hover:bg-secondary/80 disabled:opacity-60"
           >
-            📦 Mark as delivered
+            ✅ Mark as delivered
           </button>
         )}
         {order.status !== "cancelled" && order.status !== "delivered" && (

@@ -239,12 +239,38 @@ export const adminSetOrderStatus = createServerFn({ method: "POST" })
   .inputValidator((input: { passcode: string; orderId: string; status: string }) => input)
   .handler(async ({ data }) => {
     if (!passcodeOk(data.passcode)) return { ok: false as const, error: "Wrong admin code." };
-    const allowed = ["pending_payment", "payment_confirmed", "delivered", "cancelled"];
+    const allowed = [
+      "pending_payment",
+      "payment_confirmed",
+      "preparing_seedlings",
+      "dispatched",
+      "out_for_delivery",
+      "delivered",
+      "cancelled",
+    ];
     if (!allowed.includes(data.status)) return { ok: false as const, error: "Invalid status." };
     const admin = await getAdminClient();
+    const { data: current, error: cErr } = await admin
+      .from("orders")
+      .select("payment_confirmed_at")
+      .eq("id", data.orderId)
+      .maybeSingle();
+    if (cErr) return { ok: false as const, error: cErr.message };
+    const paidStages = [
+      "payment_confirmed",
+      "preparing_seedlings",
+      "dispatched",
+      "out_for_delivery",
+      "delivered",
+    ];
+    let payment_confirmed_at = (current?.payment_confirmed_at as string | null) ?? null;
+    if (paidStages.includes(data.status) && !payment_confirmed_at) {
+      payment_confirmed_at = new Date().toISOString();
+    }
+    if (data.status === "pending_payment") payment_confirmed_at = null;
     const patch: { status: string; payment_confirmed_at: string | null } = {
       status: data.status,
-      payment_confirmed_at: data.status === "payment_confirmed" ? new Date().toISOString() : null,
+      payment_confirmed_at,
     };
     const { error } = await admin.from("orders").update(patch).eq("id", data.orderId);
     if (error) return { ok: false as const, error: error.message };
